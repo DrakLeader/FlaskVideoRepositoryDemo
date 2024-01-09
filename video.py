@@ -1,23 +1,17 @@
 from datetime import datetime
+import os
 import hashlib
 import os
 import pathlib
 from flask import Flask, render_template, request
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
-import sqlalchemy as sa
+from flask import Blueprint
+from flask import current_app as video
+from user import role_required
+from db_main import db
 
-# 创建应用程序 video
-video = Flask(__name__)
-# 配置 SQLite 数据库地址
-video.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///video.db"
-# 图片默认的上传地址
-video.config["UPLOAD_FOLDER"] = "file_storage/video"
-
-# 创建拓展插件实例
-db = SQLAlchemy()
-# 将拓展插件对象绑定到程序实例
-db.init_app(video)
+# Define the blueprint
+video_blueprint = Blueprint('video', __name__)
 
 
 class VideoORM(db.Model):
@@ -27,20 +21,17 @@ class VideoORM(db.Model):
     url = db.Column(db.String(255), nullable=False)
     m3u8_url = db.Column(db.String(255), nullable=True)
     create_at = db.Column(db.DateTime, default=datetime.now)
+    is_public = db.Column(db.Boolean, default=True)
 
 
-@video.cli.command()
-def create():
-    db.drop_all()
-    db.create_all()
-
-
-@video.get("/upload_video")
+@video_blueprint.route('/upload_video', methods=['GET'])
+@role_required('root', 'admin', endpoint='video_upload_video')
 def upload_video():
     return render_template("video_upload.html")
 
 
-@video.post("/video_upload")
+@video_blueprint.route('/video_upload', methods=['POST'])
+@role_required('root', 'admin', endpoint='video_video_upload')
 def upload_video2():
     file = request.files["file"]
     if file:
@@ -92,7 +83,31 @@ def upload_video2():
 
     return {"code": 0, "msg": "上传视频成功"}
 
-@video.route("/", methods=["GET"])
+
+@video_blueprint.route('/delete_video/<int:video_id>', methods=['POST'])
+@role_required('root', 'admin', endpoint='video_delete_video')
+def delete_video(video_id):
+    video = VideoORM.query.get(video_id)
+    if video:
+        # 删除视频文件
+        video_file_path = video.url.lstrip('/')
+        m3u8_file_path = video.m3u8_url.lstrip('/')
+        try:
+            if os.path.exists(video_file_path):
+                os.remove(video_file_path)
+            if os.path.exists(m3u8_file_path):
+                os.remove(m3u8_file_path)
+        except Exception as e:
+            return {"code": 1, "msg": f"删除文件时出错: {str(e)}"}
+
+        # 删除数据库记录
+        db.session.delete(video)
+        db.session.commit()
+        return {"code": 0, "msg": "视频删除成功"}
+    return {"code": 1, "msg": "视频未找到"}
+
+
+@video_blueprint.route("/manage", methods=["GET"])
 def hello_world():
     # Check if the 'video' table exists, and create it if not
     inspector = inspect(db.engine)
@@ -101,16 +116,11 @@ def hello_world():
 
     q = db.select(VideoORM)
     video_list = db.session.execute(q).scalars()
-    return render_template("index.html", video_list=video_list)
+    return render_template("manage.html", video_list=video_list)
 
 
-
-@video.route("/video_view")
-def video_view():
+@video_blueprint.route("/video_play")
+def video_play():
     vid = request.args.get("video_id")
     video = VideoORM.query.get(vid)
-    return render_template("video_view.html", url=video.m3u8_url.replace('\\', '/'))
-
-
-if __name__ == "__main__":
-    video.run(debug=True)
+    return render_template("video_play.html", url=video.m3u8_url.replace('\\', '/'))
