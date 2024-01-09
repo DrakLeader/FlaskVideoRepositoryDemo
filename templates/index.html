@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Flask Video Streaming Demo</title>
+    <!-- 引入 layui -->
+    <link href="static/css/layui.css" rel="stylesheet" />
+    <script src="static/layui.js"></script>
+    <style>
+      .title {
+        margin-top: 100px;
+        text-align: center;
+        font-size: 52px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2 class="title">视频资源</h2>
+
+    <div class="layui-container">
+      <div class="layui-form" style="width: 80%; margin: 20px auto">
+        <div class="layui-form-item">
+          <div class="layui-input-group">
+            <input type="text" placeholder="请输入电影名" class="layui-input" />
+            <div class="layui-input-suffix">
+              <button
+                type="submit"
+                class="layui-btn"
+                lay-submit
+                lay-filter="demo1"
+              >
+                点击搜索
+              </button>
+              <a
+                href="/upload_video"
+                class="layui-btn layui-btn-primary layui-border-green"
+                >上传</a
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table class="layui-table" style="width: 80%; margin: 0 auto">
+        <colgroup>
+          <col width="300" />
+          <col width="180" />
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>上传时间</th>
+            <th>观看</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for video in video_list %}
+          <tr>
+            <td>{{ video.name }}</td>
+            <td>{{ video.create_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            <td>
+              <a
+                href="/video_play?video_id={{ video.id }}"
+                class="layui-btn layui-btn-sm"
+                >点击观看
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+flask 
+jsonfy
+requests
+blueprint
+sqlalchemy
