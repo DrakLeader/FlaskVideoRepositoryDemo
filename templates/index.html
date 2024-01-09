@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/layui@2.7.3/dist/css/layui.css"
+      media="all"
+    />
+  </head>
+  <body>
+    <div class="layui-container">
+      <div class="layui-row">
+        <div
+          class="layui-col-md4 layui-col-md-offset4"
+          style="margin-top: 100px"
+        >
+          <form class="layui-form">
+            <div class="layui-form-item">
+              <label class="layui-form-label">Username</label>
+              <div class="layui-input-block">
+                <input
+                  type="text"
+                  name="username"
+                  required
+                  lay-verify="required"
+                  placeholder="Enter username"
+                  autocomplete="off"
+                  class="layui-input"
+                />
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <label class="layui-form-label">Password</label>
+              <div class="layui-input-block">
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  lay-verify="required"
+                  placeholder="Enter password"
+                  autocomplete="off"
+                  class="layui-input"
+                />
+              </div>
+            </div>
+            <div class="layui-form-item">
+              <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="login">
+                  Login
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.7.3/dist/layui.js"></script>
+    <script>
+      layui.use("form", function () {
+        var form = layui.form;
+        form.on("submit(login)", function (data) {
+          fetch("/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data.field),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.message === "Login successful") {
+                window.location.href = "/manage";
+              } else {
+                alert(data.message);
+              }
+            });
+          return false;
+        });
+      });
+    </script>
+  </body>
+</html>
