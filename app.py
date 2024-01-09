@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
@@ -37,6 +37,10 @@ def load_user(user_id):
     # 从 user.py 导入的用户字典中获取用户
     from user import users
     return users.get(user_id)
+
+@app.route('/file_storage/<path:filename>')
+def custom_static(filename):
+    return send_from_directory('file_storage', filename)
 
 
 @app.route('/')
