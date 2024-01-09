@@ -48,6 +48,7 @@ def upload_video2():
         print("new_filename", new_filename)
 
         upload_dir = pathlib.Path(video.config["UPLOAD_FOLDER"])
+        os.makedirs(upload_dir, exist_ok=True)
         # 获取写入地址
         new_path = upload_dir.joinpath(new_filename)
         # 写入文件
