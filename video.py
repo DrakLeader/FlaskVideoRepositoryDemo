@@ -2,8 +2,9 @@ from datetime import datetime
 import os
 import hashlib
 import os
+import shutil
 import pathlib
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from sqlalchemy import inspect
 from flask import Blueprint
 from flask import current_app as video
@@ -93,11 +94,16 @@ def delete_video(video_id):
         # 删除视频文件
         video_file_path = video.url.lstrip('/')
         m3u8_file_path = video.m3u8_url.lstrip('/')
+        # 获取 ts 流文件夹路径
+        ts_folder_path = os.path.dirname(m3u8_file_path)
+
         try:
+            # 删除视频文件
             if os.path.exists(video_file_path):
                 os.remove(video_file_path)
+            # 删除 m3u8 文件和 ts 流文件夹
             if os.path.exists(m3u8_file_path):
-                os.remove(m3u8_file_path)
+                shutil.rmtree(ts_folder_path)  # 删除整个文件夹及其内容
         except Exception as e:
             return {"code": 1, "msg": f"删除文件时出错: {str(e)}"}
 
@@ -107,10 +113,22 @@ def delete_video(video_id):
         return {"code": 0, "msg": "视频删除成功"}
     return {"code": 1, "msg": "视频未找到"}
 
+@video_blueprint.route('/rename_video/<int:video_id>', methods=['POST'])
+@role_required('root', 'admin', endpoint='video_rename_video')
+def rename_video(video_id):
+    data = request.get_json()
+    new_name = data.get('newName')
+    video = VideoORM.query.get(video_id)
+
+    if video and new_name:
+        video.name = new_name
+        db.session.commit()
+        return {"code": 0, "msg": "视频重命名成功"}
+    return {"code": 1, "msg": "视频未找到或新名称无效"}
+
 
 @video_blueprint.route("/manage", methods=["GET"])
 def hello_world():
-    # Check if the 'video' table exists, and create it if not
     inspector = inspect(db.engine)
     if not inspector.has_table("video"):
         db.create_all()
@@ -125,3 +143,9 @@ def video_play():
     vid = request.args.get("video_id")
     video = VideoORM.query.get(vid)
     return render_template("video_play.html", url=video.m3u8_url.replace('\\', '/'))
+
+@video_blueprint.route('/search_videos', methods=['GET'])
+def search_videos():
+    search_query = request.args.get('query', '')
+    search_results = VideoORM.query.filter(VideoORM.name.contains(search_query)).all()
+    return jsonify([{'id': video.id, 'name': video.name, 'create_at': video.create_at.strftime('%Y-%m-%d %H:%M:%S')} for video in search_results])

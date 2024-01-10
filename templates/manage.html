@@ -5,7 +5,7 @@
     <title>Flask Video Streaming Demo</title>
     <!-- 引入 layui -->
     <link href="static/css/layui.css" rel="stylesheet" />
-    <script src="static/layui.js"></script>
+
     <style>
       .title {
         margin-top: 100px;
@@ -16,30 +16,23 @@
   </head>
   <body>
     <h2 class="title">视频资源</h2>
-
     <div class="layui-container">
-      <div class="layui-form" style="width: 80%; margin: 20px auto">
-        <div class="layui-form-item">
-          <div class="layui-input-group">
-            <input type="text" placeholder="请输入视频名" class="layui-input" />
-            <div class="layui-input-suffix">
-              <button
-                type="submit"
-                class="layui-btn"
-                lay-submit
-                lay-filter="demo1"
-              >
-                点击搜索
-              </button>
-              <a
-                href="/upload_video"
-                class="layui-btn layui-btn-primary layui-border-green"
-                >上传</a
-              >
-            </div>
+      <div class="layui-form" style="width: 80%; margin: 20px auto; display: flex; justify-content: space-between;">
+          <!-- 上传按钮的容器 -->
+          <div class="layui-form-item">
+              <a href="/upload_video" class="layui-btn layui-btn-primary layui-border-green">上传</a>
           </div>
-        </div>
+  
+          <!-- 搜索框和按钮的容器 -->
+          <div class="layui-form-item" style="display: flex; align-items: center;">
+              <div class="layui-input-group" style="margin-right: 10px;">
+                  <input type="text" id="searchInput" placeholder="请输入视频名" class="layui-input" />
+              </div>
+              <button type="button" id="searchButton" class="layui-btn">点击搜索</button>
+          </div>
       </div>
+  </div>
+  
 
       <table class="layui-table" style="width: 80%; margin: 0 auto">
         <colgroup>
@@ -51,10 +44,10 @@
           <tr>
             <th>名称</th>
             <th>上传时间</th>
-            <th>观看</th>
+            <th>操作</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="tableBody">
           {% for video in video_list %}
           <tr>
             <td>{{ video.name }}</td>
@@ -63,8 +56,22 @@
               <a
                 href="/video_play?video_id={{ video.id }}"
                 class="layui-btn layui-btn-sm"
-                >点击观看
-              </a>
+                >观看</a
+              >
+              <!-- Delete Button -->
+              <button
+                onclick="deleteVideo('{{ video.id }}')"
+                class="layui-btn layui-btn-danger layui-btn-sm"
+              >
+                删除
+              </button>
+              <!-- Rename Button -->
+              <button
+                onclick="renameVideo('{{ video.id }}', '{{ video.name }}')"
+                class="layui-btn layui-btn-normal layui-btn-sm"
+              >
+                重命名
+              </button>
             </td>
           </tr>
           {% endfor %}
@@ -73,3 +80,64 @@
     </div>
   </body>
 </html>
+
+<script src="static/layui.js"></script>
+<script>
+  function deleteVideo(videoId) {
+    // AJAX request to delete the video
+    // Replace '/delete_video' with the correct URL for your delete endpoint
+    fetch(`/delete_video/${videoId}`, { method: "POST" })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.code === 0) {
+          alert("视频删除成功");
+          window.location.reload();
+        } else {
+          alert("删除失败: " + data.msg);
+        }
+      });
+  }
+
+  function renameVideo(videoId, currentName) {
+    // Prompt for new name
+    var newName = prompt("请输入新的视频名称", currentName);
+    if (newName && newName !== currentName) {
+      // AJAX request to rename the video
+      // Replace '/rename_video' with the correct URL for your rename endpoint
+      fetch(`/rename_video/${videoId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName: newName }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.code === 0) {
+            alert("视频重命名成功");
+            window.location.reload();
+          } else {
+            alert("重命名失败: " + data.msg);
+          }
+        });
+    }
+  }
+</script>
+<script>
+  document.getElementById('searchButton').addEventListener('click', function() {
+      var searchQuery = document.getElementById('searchInput').value;
+      fetch(`/search_videos?query=${encodeURIComponent(searchQuery)}`)
+          .then(response => response.json())
+          .then(data => {
+              var tableBody = document.getElementById('tableBody');
+              tableBody.innerHTML = ''; // Clear existing table data
+              data.forEach(function(video) {
+                  var row = `<tr>
+                      <td>${video.name}</td>
+                      <td>${video.create_at}</td>
+                      <td><a href="/video_play?video_id=${video.id}" class="layui-btn layui-btn-sm">点击观看</a></td>
+                  </tr>`;
+                  tableBody.innerHTML += row;
+              });
+          });
+  });
+  </script>
+  
