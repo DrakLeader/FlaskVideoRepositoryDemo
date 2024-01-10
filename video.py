@@ -36,46 +36,43 @@ def upload_video():
 def upload_video2():
     file = request.files["file"]
     if file:
-        """接收并保存视频文件"""
+        """Recieve video file and book in DB"""
         filename = file.filename
-        # 读取视频内容
+        # read file content
         content = file.read()
-        # 获取视频的 md5 值
+        # get file md5
         hex_name = hashlib.md5(content).hexdigest()
-        # 获取文件后缀
+        # get file suffix
         suffix = pathlib.Path(filename).suffix
-        # 拼接新的名字 hex + 原有后缀
+        # new file name with previous suffix
         new_filename = hex_name + suffix
         print("new_filename", new_filename)
-
         upload_dir = pathlib.Path(video.config["UPLOAD_FOLDER"])
         os.makedirs(upload_dir, exist_ok=True)
-        # 获取写入地址
+        # write file
         new_path = upload_dir.joinpath(new_filename)
-        # 写入文件
         open(new_path, mode="wb").write(content)
 
-        """处理为 m3u8 视频格式"""
-        # 构建 m3u8 视频存放目录
+        """convert to m3u8"""
+        # construct m3u8 dir
         m3u8_path = upload_dir.parent.joinpath("m3u8")
         if not m3u8_path.exists():
             m3u8_path.mkdir()
 
         current_dir = m3u8_path.joinpath(hex_name)
         if not current_dir.exists():
-            # m3u8 处理
             current_dir.mkdir()
 
-        # 指令1 生成 ts 文件
+        # generate ts file
         cli1 = f"ffmpeg -y -i {new_path} -vcodec copy -acodec copy -bsf:v h264_mp4toannexb {str(current_dir)}/index.ts"
         os.system(cli1)
         print("cli1:", cli1)
-        # 指令2 分割 ts 片段， 生成 m3u8 索引文件
+        # split ts and index m3u8
         cli2 = f'ffmpeg -i {str(current_dir)}/index.ts -c copy -map 0 -f segment -segment_list {str(current_dir)}/index.m3u8 -segment_time 10 "{str(current_dir)}/index-%04d.ts"'
         os.system(cli2)
         print("cli2", cli2)
 
-        # 创建模型并保存到数据库
+        # Init ORM
         mv = VideoORM()
         mv.url = "/" + str(new_path)
         mv.name = filename
@@ -91,23 +88,20 @@ def upload_video2():
 def delete_video(video_id):
     video = VideoORM.query.get(video_id)
     if video:
-        # 删除视频文件
+        # Delete video
         video_file_path = video.url.lstrip('/')
         m3u8_file_path = video.m3u8_url.lstrip('/')
-        # 获取 ts 流文件夹路径
         ts_folder_path = os.path.dirname(m3u8_file_path)
 
         try:
-            # 删除视频文件
             if os.path.exists(video_file_path):
                 os.remove(video_file_path)
-            # 删除 m3u8 文件和 ts 流文件夹
             if os.path.exists(m3u8_file_path):
-                shutil.rmtree(ts_folder_path)  # 删除整个文件夹及其内容
+                shutil.rmtree(ts_folder_path)
         except Exception as e:
             return {"code": 1, "msg": f"删除文件时出错: {str(e)}"}
 
-        # 删除数据库记录
+        # delete DB record
         db.session.delete(video)
         db.session.commit()
         return {"code": 0, "msg": "视频删除成功"}

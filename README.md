@@ -8,10 +8,12 @@ An instant demo for flask video storage and live streaming(Not Currently Availab
 pip install -r requirements.txt
 ```
 
+Doc in Simplified Chinese is available at [doc/](doc/). Which shows how to use this demo.
+
 ## Usage
 
 ```bash
-python app.py
+python3 app.py
 ```
 
 ## License

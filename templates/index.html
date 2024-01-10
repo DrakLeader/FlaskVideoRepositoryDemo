@@ -2,11 +2,8 @@
 <html>
   <head>
     <title>Login</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/layui@2.7.3/dist/css/layui.css"
-      media="all"
-    />
+    <!-- Modified to use local LayUI CSS file -->
+    <link href="static/css/layui.css" rel="stylesheet" />
   </head>
   <body>
     <div class="layui-container">
@@ -55,30 +52,54 @@
         </div>
       </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/layui@2.7.3/dist/layui.js"></script>
-    <script>
-      layui.use("form", function () {
-        var form = layui.form;
-        form.on("submit(login)", function (data) {
-          fetch("/login", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data.field),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.message === "Login successful") {
-                window.location.href = "/manage";
-              } else {
-                alert(data.message);
-              }
-            });
-          return false;
-        });
-      });
-    </script>
+    <div class="layui-container" style="margin-top: 20px">
+      <table class="layui-table">
+        <colgroup>
+          <col width="150" />
+          <col width="150" />
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Test Account</th>
+            <th>Password</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>admin</td>
+            <td>admin</td>
+          </tr>
+          <tr>
+            <td>user</td>
+            <td>user</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </body>
+  <script src="static/layui.js"></script>
+  <script>
+    layui.use("form", function () {
+      var form = layui.form;
+      form.on("submit(login)", function (data) {
+        fetch("/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data.field),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message === "Login successful") {
+              window.location.href = "/manage";
+            } else {
+              alert(data.message);
+            }
+          });
+        return false;
+      });
+    });
+  </script>
 </html>

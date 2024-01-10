@@ -4,37 +4,36 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 from db_main import db
 
-from video import video_blueprint, VideoORM  # 导入 video 蓝图和 VideoORM
-from user import user_blueprint  # 导入 user 蓝图
+from video import video_blueprint, VideoORM
+from user import user_blueprint
 
 app = Flask(__name__)
 
-# 配置数据库
+# Database configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["UPLOAD_FOLDER"] = "file_storage/video"
 
-# 设置secret_key
+# set up secret_key
 app.config["SECRET_KEY"] = "8f42a73054b1749f8f58848be5e6502c"
 
-# 初始化 db
+# init db
 db.init_app(app)
 
-# 初始化 Flask-Login
+# Init Flask-Login
 login_manager = LoginManager(app)
-login_manager.login_view = 'user.login'  # 更新登录视图的端点
+login_manager.login_view = 'user.login'  # Update the login view
 
-# 注册蓝图
+# Register blueprints
 app.register_blueprint(user_blueprint)
 app.register_blueprint(video_blueprint)
 
-# 在应用程序上下文中检查并创建数据库表
+# Create database tables if they don't exist
 with app.app_context():
     if not inspect(db.engine).has_table('video'):
         db.create_all()
 
 @login_manager.user_loader
 def load_user(user_id):
-    # 从 user.py 导入的用户字典中获取用户
     from user import users
     return users.get(user_id)
 
@@ -49,4 +48,4 @@ def home():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0：5006')
+    app.run(host='0.0.0.0')
